@@ -1,0 +1,22 @@
+まだ未完成
+
+依存スクリプト
+require 'auto-complete
+require 'json
+
+Vim用のGauche-CompleteをEmacsに移植したものです。
+ソースコード内の大域定義とuseしているモジュールの解析を行い、
+補完候補としてリストアップします。
+
+
+Basic setup
+
+(require 'gdev)
+;;set install directory
+(setq gdev:root-dir "~/.emacs.d/emacs-gdev")
+
+(require 'goshcomp)
+(defun scheme-mode-hooks ()
+  (setq ac-sources (append goshcomp:all-source ac-sources)))
+(add-hook 'scheme-mode-hook 'scheme-mode-hooks)
+
