@@ -5,8 +5,10 @@ require 'auto-complete
 require 'json
 
 Vim用のGauche-CompleteをEmacsに移植したものです。
-ソースコード内の大域定義とuseしているモジュールの解析を行い、
-補完候補としてリストアップします。
+gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じものを利用しています。
+
+現状の機能
+・ソースコード内の大域定義とuseしているモジュールの解析を行い 補完候補としてリストアップ
 
 
 Basic setup
