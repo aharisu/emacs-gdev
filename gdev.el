@@ -1,10 +1,11 @@
-;;(setq debug-on-error t)
+;(setq debug-on-error t)
 (defvar gdev:debug nil)
 
 (require 'json)
 
 
 (defvar gdev:root-dir "~/.emacs-gdev")
+(defvar gdev:task-timeout-sec 7) ;7 seconds
 
 ;;
 ;; util functions
@@ -220,8 +221,7 @@
 			 "--output-name-only"
 			 ;;TODO other encoding
 		         ;"--io-encoding="
-			 ;;TODO supprt restart
-			 ;get-load-moudle-text
+			 (gdev:get-load-module-text)
 			 ))
     ;;ignore warning
     (process-kill-without-query gdev:process nil)
@@ -230,6 +230,26 @@
   ;;count up init-count
   (setq gdev:init-count (1+ gdev:init-count)))
 
+(defun gdev:get-load-module-text ()
+  "[internal]"
+  (gdev:foldl
+   (lambda (acc name)
+     (let ((name (gdev:get-loaded-module-name name)))
+       (if name
+	   (concat acc " --load-module=\"" name "\"")
+	 acc)))
+   ""
+   (gdev:hash-keys gdev:doc-table)))
+
+(defun gdev:get-loaded-module-name (docname)
+  "[internal]"
+  (if (string-match "^#" docname)
+      (let ((name (substring docname (1+ (string-match "#" docname 1)))))
+	(if (string= "[No Name]" name)
+	    nil
+	  (concat "f" name " " docname)))
+    (concat "m" docname)))
+    
 (defun gdev:final-proc ()
   (when gdev:debug
     (message "final-proc count %s" gdev:init-count))
@@ -241,6 +261,18 @@
       (gdev:write-text "#exit\n")
       (setq gdev:process nil)
       (setq gdev:init-coount 0))))
+
+(defun gdev:restart-proc ()
+  "[internal]"
+  (when gdev:process
+    (let ((tmp gdev:init-count))
+      ;;kill process
+      (delete-process gdev:process)
+      (setq gdev:process nil)
+      ;;restart process
+      (setq gdev:init-count 0)
+      (gdev:init-proc)
+      (setq gdev:init-count tmp))))
 
 (defun gdev:write-text (text)
   "[internal]"
@@ -259,15 +291,20 @@
 (defvar gdev:task-list nil)
 (setq gdev:task-list nil)
 
+(defvar gdev:task-timer nil)
+
 (defun gdev:add-async-task (text callback context)
   (when gdev:debug
     (message "add-async-task %s" text))
   (if (zerop (length gdev:task-list))
-      (progn
+      (progn ;; Run the task immediately
 	(gdev:write-text text)
 	(setq gdev:task-list (cons
 				  (list callback context (cadr (current-time)))
-				  nil)))
+				  nil))
+	;;start timer for checking timeout
+	(setq gdev:task-timer (run-at-time t 1 'gdev:check-task-timeout)))
+    ;;Stored in the task list
     (setq gdev:task-list (append
 			  gdev:task-list
 			  (cons (list text callback context) nil)))))
@@ -279,13 +316,17 @@
   "[internal]"
   (when gdev:debug
     (message "start-next-task %s" (gdev:empty-async-task?)))
-  (when gdev:task-list
-    (gdev:write-text (caar gdev:task-list))
-    (setcar gdev:task-list (append
+  (if gdev:task-list
+      (progn
+	(gdev:write-text (caar gdev:task-list))
+	(setcar gdev:task-list (append
 				(cdar gdev:task-list)
-				(cons (cadr (current-time)) nil)))))
+				(cons (cadr (current-time)) nil))))
+    ;;stop timer
+    (cancel-timer gdev:task-timer)
+    (setq gdev:task-timer nil)))
 			      
-(defun gdev:exec-head-task-callback (docs)
+(defun gdev:exec-task-callback (docs)
   "[internal]"
   (when gdev:debug
     (message "exec-head-task-callback %s, %s" docs gdev:task-list))
@@ -294,7 +335,6 @@
       (setq gdev:task-list (cdr gdev:task-list))
       (gdev:start-next-task))))
 
-;;TODO check timeout
 (defvar gdev:output-list nil)
 (defun gdev:read-from-gauche-complete (proc text)
   "[internal] process output filter."
@@ -302,11 +342,21 @@
     (message "read-from-gauche-complete %s" text))
   (let ((l (split-string text "\n")))
     (while (cdr l)
-      (gdev:exec-head-task-callback
+      (gdev:exec-task-callback
        (json-read-from-string (mapconcat 'identity (nreverse (cons (car l) gdev:output-list)) "")))
       (setq gdev:output-list nil)
       (setq l (cdr l)))
     (unless (zerop (length (car l)))
       (setq gdev:output-list (cons (car l) gdev:output-list)))))
+
+(defun gdev:check-task-timeout ()
+  "[internal] check async task timeout"
+  (when gdev:debug
+    (message "check-task-timeout %s" (current-time)))
+  (let ((task (car gdev:task-list)))
+    (when (< gdev:task-timeout-sec  (- (cadr (current-time)) (car (cddr task))))
+      ;;timeout
+      (gdev:restart-proc)
+      (gdev:exec-task-callback nil))))
 
 (provide 'gdev)

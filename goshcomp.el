@@ -174,8 +174,10 @@
   (when goshcomp:debug
     (message "load-default-module-callback")
     (message "%s" docs))
-  (setq goshcomp:default-module-order (assoc-default 'order docs))
-  (goshcomp:add-doc (assoc-default 'docs docs)))
+  (when docs
+    (setq goshcomp:default-module-order (assoc-default 'order docs))
+    (goshcomp:add-doc (assoc-default 'docs docs)))
+  t)
 
 (defun goshcomp:parse-cur-buf-from-file ()
   "[internal]"
@@ -191,8 +193,8 @@
   (let* ((buf-key (buffer-name))
 	 (filename buffer-file-name)
 	 (docname (if (zerop (length filename))
-		      (concat "#" buf-key "[No Name]")
-		    (concat "#" buf-key filename))))
+		      (concat "#" buf-key "#[No Name]")
+		    (concat "#" buf-key "#" filename))))
     (if (or (zerop (length filename)) (buffer-modified-p))
 	(let ((basedir (if (zerop (length filename))
 			   default-directory
@@ -211,9 +213,11 @@
   (when goshcomp:debug
     (message "parse-cur-buf-callback")
     (message "%s" docs))
-  (goshcomp:add-doc (assoc-default 'docs docs))
-  (gdev:set-module-order context
-			 (vconcat goshcomp:default-module-order (assoc-default 'order docs)))
-  (goshcomp:build-word-list (buffer-name)))
+  (when docs
+    (goshcomp:add-doc (assoc-default 'docs docs))
+    (gdev:set-module-order context
+			   (vconcat goshcomp:default-module-order (assoc-default 'order docs)))
+    (goshcomp:build-word-list (buffer-name)))
+  t)
 
 (provide 'goshcomp)
