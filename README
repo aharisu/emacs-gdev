@@ -4,6 +4,9 @@
 require 'auto-complete
 require 'json
 
+依存バイナリ
+Gauche 0.9.2以上
+
 Vim用のGauche-CompleteをEmacsに移植したものです。
 gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じものを利用しています。
 
