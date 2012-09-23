@@ -4,37 +4,7 @@
 (require 'gdev)
 (require 'auto-complete)
 
-(defvar goshcomp:enable-goshcomp t)
 
-(defvar goshcomp:default-module-order nil)
-
-;;
-;; hooks
-
-(defun goshcomp:scheme-mode-hooks ()
-  "[internal]"
-  (when goshcomp:debug
-    (message "goshcomp:scheme-mode-hooks")
-    (message (buffer-name))
-    (message buffer-file-name)
-    (message mode-name))
-  (when goshcomp:enable-goshcomp
-    (gdev:init-proc)
-    (goshcomp:load-default-module)
-    (goshcomp:parse-cur-buf)))
-;;register scheme-mode hook
-(add-hook 'scheme-mode-hook 'goshcomp:scheme-mode-hooks)
-
-(defun goshcomp:after-save-hooks ()
-  "[internal]"
-  (when goshcomp:debug
-    (message "goshcomp:after-save-hooks")
-    (message mode-name))
-  (when (and goshcomp:enable-goshcomp
-	     (string= "Scheme" mode-name))
-    (goshcomp:parse-cur-buf-from-file)))
-;;register after-save-hook
-(add-hook 'after-save-hook 'goshcomp:after-save-hooks)
 
 
 ;;
@@ -148,76 +118,9 @@
 	  (assoc-default 'docname unit))
   )
 
+
 ;;
-;; Communicate to gosh-complete
-
-(defun goshcomp:add-doc (docs)
-  "[internal]"
-  (mapc
-   (lambda (doc)
-     (gdev:add-doc (assoc-default 'n doc)
-		   (assoc-default 'f doc)
-		   (assoc-default 'units doc)))
-   docs))
-
-(defun goshcomp:load-default-module ()
-  "[internal]"
-  (when goshcomp:debug
-    (message "load-default-module"))
-  (unless goshcomp:default-module-order
-    (gdev:add-async-task "#load-default-module\n"
-			 'goshcomp:load-default-module-callback
-			 nil)))
-
-(defun goshcomp:load-default-module-callback (docs context)
-  "[internal]"
-  (when goshcomp:debug
-    (message "load-default-module-callback")
-    (message "%s" docs))
-  (when docs
-    (setq goshcomp:default-module-order (assoc-default 'order docs))
-    (goshcomp:add-doc (assoc-default 'docs docs)))
-  t)
-
-(defun goshcomp:parse-cur-buf-from-file ()
-  "[internal]"
-  (when goshcomp:debug
-    (message "parse-cur-buf-from-file"))
-  (when (and (not (zerop (length buffer-file-name))) (not (buffer-modified-p)))
-    (goshcomp:parse-cur-buf)))
-
-(defun goshcomp:parse-cur-buf ()
-  "[internal]"
-  (when goshcomp:debug
-    (message "parse-cur-buf"))
-  (let* ((buf-key (buffer-name))
-	 (filename buffer-file-name)
-	 (docname (if (zerop (length filename))
-		      (concat "#" buf-key "#[No Name]")
-		    (concat "#" buf-key "#" filename))))
-    (if (or (zerop (length filename)) (buffer-modified-p))
-	(let ((basedir (if (zerop (length filename))
-			   default-directory
-			 (file-name-directory filename))))
-	  (gdev:add-async-task (concat "#stdin " basedir " " docname "\n"
-				       (buffer-substring-no-properties (point-min) (point-max))
-				       "#stdin-eof\n")
-			       'goshcomp:parse-cur-buf-callback
-			       buf-key))
-      (gdev:add-async-task (concat "#load-file " filename " " docname "\n")
-			   'goshcomp:parse-cur-buf-callback
-			   buf-key))))
-
-(defun goshcomp:parse-cur-buf-callback (docs context)
-  "[internal]"
-  (when goshcomp:debug
-    (message "parse-cur-buf-callback")
-    (message "%s" docs))
-  (when docs
-    (goshcomp:add-doc (assoc-default 'docs docs))
-    (gdev:set-module-order context
-			   (vconcat goshcomp:default-module-order (assoc-default 'order docs)))
-    (goshcomp:build-word-list (buffer-name)))
-  t)
+;; Register hook 
+(gdev:add-after-parseing-hook 'goshcomp:build-word-list)
 
 (provide 'goshcomp)

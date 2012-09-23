@@ -5,6 +5,7 @@
 
 
 (defvar gdev:root-dir "~/.emacs-gdev")
+(defvar gdev:enable-gdev t)
 (defvar gdev:task-timeout-sec 7) ;7 seconds
 
 ;;
@@ -50,32 +51,142 @@
 
 
 ;;
+;; hooks
+
+(defun gdev:scheme-mode-hooks ()
+  "[internal]"
+  (when gdev:debug
+    (message "gdev:scheme-mode-hooks")
+    (message (buffer-name))
+    (message buffer-file-name)
+    (message mode-name))
+  (when gdev:enable-gdev
+    (gdev:init-proc)
+    (gdev:load-default-module)
+    (gdev:parse-cur-buf)))
+;;register scheme-mode hook
+(add-hook 'scheme-mode-hook 'gdev:scheme-mode-hooks)
+
+(defun gdev:after-save-hooks ()
+  "[internal]"
+  (when gdev:debug
+    (message "gdev:after-save-hooks")
+    (message mode-name))
+  (when (and gdev:enable-gdev
+	     (string= "Scheme" mode-name))
+    (gdev:parse-cur-buf-from-file)))
+;;register after-save-hook
+(add-hook 'after-save-hook 'gdev:after-save-hooks)
+
+;;
+;; Register hook is called after parseing
+;; Format of the hook function:(lambda (parsed-buffer-name) ...)
+
+(defvar gdev:after-parseing-hooks nil)
+(defun gdev:add-after-parseing-hook (hook)
+  (setq gdev:after-parseing-hooks
+	(cons hook gdev:after-parseing-hooks)))
+
+;;
+;; Communicate to gosh-complete
+
+(defun gdev:load-default-module ()
+  "[internal]"
+  (when gdev:debug
+    (message "load-default-module"))
+  (unless gdev:default-module-order
+    (gdev:add-async-task "#load-default-module\n"
+			 'gdev:load-default-module-callback
+			 nil)))
+
+(defun gdev:load-default-module-callback (docs context)
+  "[internal]"
+  (when gdev:debug
+    (message "load-default-module-callback")
+    (message "%s" docs))
+  (when docs
+    (setq gdev:default-module-order (assoc-default 'order docs))
+    (gdev:add-doc (assoc-default 'docs docs)))
+  t)
+
+(defun gdev:parse-cur-buf-from-file ()
+  (when gdev:debug
+    (message "parse-cur-buf-from-file"))
+  (when (and (not (zerop (length buffer-file-name))) (not (buffer-modified-p)))
+    (gdev:parse-cur-buf)))
+
+(defun gdev:parse-cur-buf ()
+  (when gdev:debug
+    (message "parse-cur-buf"))
+  (let* ((buf-key (buffer-name))
+	 (filename buffer-file-name)
+	 (docname (if (zerop (length filename))
+		      (concat "#" buf-key "#[No Name]")
+		    (concat "#" buf-key "#" filename))))
+    (if (or (zerop (length filename)) (buffer-modified-p))
+	(let ((basedir (if (zerop (length filename))
+			   default-directory
+			 (file-name-directory filename))))
+	  (gdev:add-async-task (concat "#stdin " basedir " " docname "\n"
+				       (buffer-substring-no-properties (point-min) (point-max))
+				       "#stdin-eof\n")
+			       'gdev:parse-cur-buf-callback
+			       buf-key))
+      (gdev:add-async-task (concat "#load-file " filename " " docname "\n")
+			   'gdev:parse-cur-buf-callback
+			   buf-key))))
+
+(defun gdev:parse-cur-buf-callback (docs context)
+  "[internal]"
+  (when gdev:debug
+    (message "parse-cur-buf-callback")
+    (message "%s" docs))
+  (when docs
+    (gdev:add-doc (assoc-default 'docs docs))
+    (gdev:set-module-order context
+			   (vconcat gdev:default-module-order (assoc-default 'order docs)))
+    ;;exec each hook
+    (mapc
+     (lambda (hook) (funcall hook context))
+     gdev:after-parseing-hooks))
+  t)
+
+
+;;
 ;; document management
 
 (defvar gdev:doc-table (make-hash-table :test 'equal))
+(defvar gdev:default-module-order nil)
 (defvar gdev:each-buf-data (make-hash-table :test 'equal))
 
-(defun gdev:add-doc (name filepath units)
-  (when gdev:debug
-    (message "add-doc")
-    (message "name %s" name)
-    (message "filepath %s" filepath))
-  (let ((filepath (if (zerop (length filepath))
-		      (if (string-match "^#" name)
-			  ;;TODO ????
-			  (substring name 2)
-			"")
-		    filepath))
-	(units (append units nil))) ;convert vector -> list
-    (mapc
-     (lambda (unit)
-       (setcdr unit (append
-		     (list (cons 'docnsme (replace-regexp-in-string " " "\\ " name))
-			   (cons 'filepath (replace-regexp-in-string " " "\\ " filepath))
-			   (cons 'laded-doc nil))
-		     (cdr unit))))
-     units)
-    (puthash name units gdev:doc-table)))
+(defun gdev:add-doc (docs)
+  "[internal]"
+  (mapc
+   (lambda (doc)
+     (let ((name (assoc-default 'n doc))
+	   (filepath (assoc-default 'f doc))
+	   (units (assoc-default 'units doc)))
+       (when gdev:debug
+	 (message "add-doc")
+	 (message "name %s" name)
+	 (message "filepath %s" filepath))
+       (let ((filepath (if (zerop (length filepath))
+			   (if (string-match "^#" name)
+			       ;;TODO ????
+			       (substring name 2)
+			     "")
+			 filepath))
+	     (units (append units nil))) ;convert vector -> list
+	 (mapc
+	  (lambda (unit)
+	    (setcdr unit (append
+			  (list (cons 'docnsme (replace-regexp-in-string " " "\\ " name))
+				(cons 'filepath (replace-regexp-in-string " " "\\ " filepath))
+				(cons 'laded-doc nil))
+			  (cdr unit))))
+	  units)
+	 (puthash name units gdev:doc-table))))
+   docs))
 
 (defun gdev:set-buf-data (buf-key key data)
   (when gdev:debug
