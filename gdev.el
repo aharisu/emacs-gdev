@@ -480,7 +480,7 @@
 ;; Show ginfo
 
 (defvar gdev:prev-show-ginof-symbol nil)
-(defun show-ginfo ()
+(defun ginfo ()
   (interactive)
   (let* ((units (gdev:match-unit-in-order (buffer-name) "" nil))
 	 (units (mapcar (lambda (u) (cons (assoc-default 'n u) u)) units)))
