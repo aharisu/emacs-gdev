@@ -13,7 +13,7 @@ gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じも�
 現状の機能
 -ソースコード内の大域定義とuseしているモジュールの解析を行い 補完候補としてリストアップ
 
--show-ginfoコマンドによってシンボルの情報を表示
+-ginfoコマンドによってシンボルの情報を表示
   -表示する内容
     シンボルタイプ(変数、関数、クラス...)
     定義モジュール(ファイル)名
@@ -31,6 +31,12 @@ gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じも�
     最後の式のが返されます。
     ...
 
+-anythingを利用したginfo検索
+  anything-ginfo-sourceを実装。
+  ginfo-anything、ginfo-with-word-anythingコマンドによって、anything-ginfo-sourceを呼び出してginfoをanythingのインタフェースを利用して実行できます。
+  特にginfo-with-word-anythingコマンドは現在のカーソル位置のシンボルを入力としてanythingを呼び出し、
+  一つしか候補がない場合はすぐにinfo画面を起動するのでキーマップに割り当てて使用することをお勧めします。
+
 
 Basic setup
 
@@ -39,7 +45,11 @@ Basic setup
 (setq gdev:root-dir "~/.emacs.d/emacs-gdev")
 
 (require 'goshcomp)
+(require 'gosh-anything)
 (defun scheme-mode-hooks ()
-  (setq ac-sources (append goshcomp:all-source ac-sources)))
+  ;;auto-completeにGauche用のソースを追加
+  (setq ac-sources (append goshcomp:all-source ac-sources))
+  ;;ginfo-with-word-anythingコマンドをC-cgkに割り当て
+  (define-key scheme-mode-map "\C-cgk" 'ginfo-with-word-anything))
 (add-hook 'scheme-mode-hook 'scheme-mode-hooks)
 
