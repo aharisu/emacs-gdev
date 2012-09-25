@@ -389,13 +389,13 @@
 (defun gdev:match-unit-in-order-first-match-priority-exact-match (buf-key keyword allow-duplicate)
   (when gdev:debug
     (message "match-unit-in-order-first-match-priority-exact-match buf-key %s, keyword %s" buf-key keyword))
-  (let* ((units (gdev:match-unit-in-order-first-match buf-key keyword allow-dbuplicate))
+  (let* ((units (gdev:match-unit-in-order-first-match buf-key keyword allow-duplicate))
 	 (ret units)
 	 (len (length keyword)))
     (while units
       (if (= (length (assoc-default 'n (car units))) len)
 	  (progn
-	    (setq ret (car units))
+	    (setq ret (cons (car units) nil))
 	    (setq units nil))
 	(setq units (cdr units))))
     ret))
