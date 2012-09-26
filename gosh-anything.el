@@ -111,7 +111,7 @@
   (while (not gany:finish-load-all-symbol)
     (sleep-for 0.05)))
 
-(defun ginfo-all-symbol-anything ()
+(defun ginfo-anything-all-symbol ()
   (interactive)
   (anything :sources 'anything-ginfo-all-symbol-source
 	    :buffer "*ginfo-anything*"
