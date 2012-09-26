@@ -500,6 +500,80 @@
 	    (gdev:show-info (assoc-default 'docname u) sym))
 	  (setq gdev:prev-show-ginof-symbol sym))))))
 
+(defvar gdev:prev-ginfo-all-module-symbol nil)
+(defun ginfo-all-module ()
+  (interactive)
+  (let ((modules (gdev:get-all-module-list)))
+    (if (zerop (length modules))
+	(message "No Candidate.")
+      (let* ((prompt (if gdev:prev-ginfo-all-module-symbol
+			 (concat "Module(" gdev:prev-ginfo-all-module-symbol "): ")
+		       "Module: "))
+	     (mod (completing-read prompt modules nil t)))
+	(when (zerop (length mod))
+	  (setq mod gdev:prev-ginfo-all-module-symbol))
+	(when (and mod (not (zerop (length mod))))
+	  (let* ((units (gdev:get-all-symbol-in mod))
+		 (sym (completing-read (concat "Symbol In [" mod "]: ") units nil t)))
+	    (when (and sym (not (zerop (length sym))))
+	      (let ((u (assoc-default sym units)))
+		(gdev:show-info (assoc-default 'docname u) sym)))))))))
+		       	    
+(defvar gdev:all-module-list nil)
+(defun gdev:get-all-module-list (&optional update)
+  (unless (and gdev:all-module-list (not update))
+    (setq gdev:all-module-list nil)
+    (gdev:add-async-task "#load-all-module\n"
+			 'gdev:load-all-module-callback
+			 nil)
+    (while (not gdev:all-module-list)
+      (sleep-for 0.05)))
+  gdev:all-module-list)
+
+(defun gdev:load-all-module-callback (modules context)
+  "[internal]"
+  (setq gdev:all-module-list
+	(mapcar
+	 (lambda (mod) (cons (assoc-default 'n mod) mod))
+	 modules))
+  t)
+
+(defvar gdev:all-symbol-in-list nil)
+(defvar gdev:all-symbol-in-finish nil)
+(defun gdev:get-all-symbol-in (module)
+  (let ((symbol-list (assoc-default module gdev:all-symbol-in-list)))
+    (unless symbol-list
+      (setq gdev:all-symbol-in-finish nil)
+      (gdev:add-async-task (concat "#load-symbol-in " module "\n")
+			   'gdev:load-symbol-in-callback
+			   module)
+      (while (not gdev:all-symbol-in-finish)
+	(sleep-for 0.05))
+      (setq symbol-list (assoc-default module gdev:all-symbol-in-list)))
+    symbol-list))
+
+(defun gdev:load-symbol-in-callback (doc module)
+  "[internal]"
+  (when doc
+    (let ((docname (assoc-default 'n (aref doc 0))))
+      (setq gdev:all-symbol-in-list
+	    (append
+	     (cons (cons module
+			 (mapcar
+			  (lambda (unit) (cons (assoc-default 'n unit)
+					       `((n . ,(assoc-default 'n unit))
+						 (docname . ,docname))))
+			  (assoc-default 'units (aref doc 0))))
+		   nil)
+	     (gdev:filter
+	      (lambda (mod) (not (equal (car mod) module)))
+	      gdev:all-symbol-in-list)))))
+  (setq gdev:all-symbol-in-finish t)
+  t)
+
+;;
+;;show ginfo buffer
+
 (defun gdev:show-info (module symbol &optional direc size)
   (when gdev:debug
     (message "gdev:show-info"))
