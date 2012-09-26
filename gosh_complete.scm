@@ -1,4 +1,4 @@
-;;;
+
 ;;; gosh_complete
 ;;;
 ;;; MIT License
@@ -614,13 +614,13 @@
                         (when (zero? (remainder (+ index 1) 12))
                           (let/cc resume-cont
                             ;;pause
-                            (print-std "##")
+                            (print-std "\"##\"")
                             (set! load-all-symbol-continuation resume-cont)
                             (escape))))
                       (append
                         default-module
                         (all-library-names)))
-                    (print-std "#")))
+                    (print-std "\"#\"")))
                 (else
                   (let/cc escape
                     (for-each
@@ -635,7 +635,7 @@
                       (append
                         default-module
                         (all-library-names))))
-                  (print-std "#")))))
+                  (print-std "\"#\"")))))
 
 (define-cmd resume-load-all-symbol
             zero?

@@ -216,9 +216,12 @@
 ;  (when gdev:debug
 ;    (message "exec-head-task-callback %s, %s" docs gdev:task-list))
   (let ((task (car gdev:task-list)))
-    (when (funcall (car task) docs (cadr task))
-      (setq gdev:task-list (cdr gdev:task-list))
-      (gdev:start-next-task))))
+    (if (funcall (car task) docs (cadr task))
+	(progn
+	  (setq gdev:task-list (cdr gdev:task-list))
+	  (gdev:start-next-task))
+      ;;extend the timeout
+      (setcar (cddr task) (cadr (current-time))))))
 
 (defvar gdev:output-list nil)
 (defun gdev:read-from-gauche-complete (proc text)
@@ -503,7 +506,7 @@
   (let* ((doc (gethash module gdev:doc-table))
 	 (ginfo-list (if doc
 			 (gdev:get-unit-ginfo (gdev:match-unit-in-doc doc symbol) t)
-		       (gdev:get-unit-ginfo  `((n . ,symbol) (docname . ,module) (loaded? . nil)) nil))))
+		       (gdev:get-unit-ginfo  `(((n . ,symbol) (docname . ,module) (loaded? . nil))) nil))))
     (unless (zerop (length ginfo-list))
       (unless (or (eq direc 'above) (eq direc 'below))
 	(setq direc gdev:default-split-window-direc))

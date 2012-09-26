@@ -37,6 +37,11 @@ gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じも�
   特にginfo-with-word-anythingコマンドは現在のカーソル位置のシンボルを入力としてanythingを呼び出し、
   一つしか候補がない場合はすぐにinfo画面を起動するのでキーマップに割り当てて使用することをお勧めします。
 
+-ロード可能なモジュール全てから横断的に検索
+  anything-ginfo-all-symbol-sourceを実装。
+  動的にロードパスから全てのモジュールを探し出しシンボルを一覧できます。
+  anything起動後も非同期で候補の追加と更新を行うため目的のシンボルがなかなか現れないとうことが起こる可能性があります。
+
 
 Basic setup
 
