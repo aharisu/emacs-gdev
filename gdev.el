@@ -826,4 +826,23 @@
     (when enter?
       (select-window win))))
 
+;;
+;; Jump to definition
+
+(defun gdev:gosh-goto-define (keyword split-direc)
+  (let ((units (gdev:match-unit-in-order-first-match-priority-exact-match (buffer-name) keyword nil))
+	(success? nil))
+    (when (= 1 (length units))
+      (let ((line (string-to-int (assoc-default 'l (car units))))
+	    (filepath (assoc-default 'filepath (car units))))
+	(when (and (< 0 line) filepath (not (zerop (length filepath))))
+	  (cond
+	   ((eq split-direc 'v) (select-window (split-window-horizontally)))
+	   ((eq split-direc 'h) (select-window (split-window-vertically))))
+	  (find-file filepath)
+	  (goto-line line)
+	  (setq success? t))))
+    (unless success?
+      (message "Sorry. Can't jump."))))
+
 (provide 'gdev)

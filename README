@@ -47,6 +47,13 @@ gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じも�
   ロード可能な全てのモジュールを一覧から選択、次にモジュール内のシンボルを一覧から選択しginfoを表示します。
   anything-ginfo-all-module-sourceと対応するginfo-anything-all-moduleコマンドを実装。
 
+--定義へジャンプ
+  gdev:gosh-goto-define関数を実装。
+  シンボルが定義されたファイルを開きその行へジャンプします。
+  schemeレベルで定義されているシンボルであればGaucheライブラリ内で定義されたシンボルにもジャンプすることができます。
+  ただし、ジャンプ前の地点を保存していないので元の場所には戻れません。
+  Basic setupで設定しているように適当なキーにマッピングして使用してください。
+
 
 Basic setup
 
@@ -60,6 +67,20 @@ Basic setup
   ;;auto-completeにGauche用のソースを追加
   (setq ac-sources (append goshcomp:all-source ac-sources))
   ;;ginfo-with-word-anythingコマンドをC-cgkに割り当て
-  (define-key scheme-mode-map "\C-cgk" 'ginfo-with-word-anything))
+  (define-key scheme-mode-map "\C-cgk" 'ginfo-with-word-anything)
+  ;;現在のバッファでカーソル位置のシンボルが定義されている場所にジャンプ
+  (define-key scheme-mode-map [f12] (lambda ()
+                                      (interactive)
+                                      (gdev:gosh-goto-define (symbol-name (symbol-at-point)) nil)))
+  ;;横方向に分割したバッファでカーソル位置のシンボルが定義されている場所にジャンプ
+  (define-key scheme-mode-map [f11] (lambda ()
+				                              (interactive)
+                                      (gdev:gosh-goto-define (symbol-name (symbol-at-point)) 'h)))
+  ;;縦方向に分割したバッファでカーソル位置のシンボルが定義されている場所にジャンプ
+  (define-key scheme-mode-map [f10] (lambda ()
+				                              (interactive)
+                                      (gdev:gosh-goto-define (symbol-name (symbol-at-point)) 'v)))
+  )
+
 (add-hook 'scheme-mode-hook 'scheme-mode-hooks)
 
