@@ -45,6 +45,7 @@ gdev.el,goshcomp.el以外のファイルはすべてGauche-Completeと同じも�
 -モジュール一覧検索 -> モジュール内のシンボル一覧検索
   ginfo-all-moduleコマンドを実装。
   ロード可能な全てのモジュールを一覧から選択、次にモジュール内のシンボルを一覧から選択しginfoを表示します。
+  anything-ginfo-all-module-sourceと対応するginfo-anything-all-moduleコマンドを実装。
 
 
 Basic setup

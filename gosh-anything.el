@@ -116,6 +116,28 @@
   (anything :sources 'anything-ginfo-all-symbol-source
 	    :buffer "*ginfo-anything*"
 	    ))
+
+;;
+;;ginfo-anything-all-module
+
+(defvar anything-ginfo-all-module-source
+  '((name . "ginfo all module")
+    (candidates . gdev:get-all-module-list)
+    (action ("Symbol in" . (lambda (mod)
+			  (anything :sources `((name . ,(concat "ginfo all symbol in " (assoc-default 'n mod)))
+					       (candidates . ,(gdev:get-all-symbol-in (assoc-default 'n mod)))
+					       (type . ginfo))
+				    :buffer "*ginfo-anything*"
+				    ))))
+    "Gauche Info."))
+
+(defun ginfo-anything-all-module ()
+  (interactive)
+  (anything :sources 'anything-ginfo-all-module-source
+	    :buffer "*ginfo-anything*"
+	    ))
+    
+	  
   
 (provide 'gosh-anything)
 
