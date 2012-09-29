@@ -161,10 +161,12 @@
 
 (defun gdev:write-text (text)
   "[internal]"
-  ;;TODO check initialize
   (when gdev:debug
     (message "write-text %s" text))
-  (process-send-string gdev:process text))
+  (if gdev:process
+      (process-send-string gdev:process text)
+    (error "gdev process is not running")))
+
 
 
 ;;;;;;;
@@ -342,8 +344,7 @@
 	 (message "filepath %s" filepath))
        (let ((filepath (if (zerop (length filepath))
 			   (if (string-match "^#" name)
-			       ;;TODO ????
-			       (substring name 2)
+			       (substring name (1+ (string-match "#" name 1)))
 			     "")
 			 filepath))
 	     (units (append units nil))) ;convert vector -> list
@@ -711,9 +712,9 @@
   "[internal]"
   (princ (let ((module (assoc-default 'docname unit)))
 	   (if (string-match "^#" module)
-	       (substring module (1+ (string-match "#" module 1)))
-	     ;;TODO
-	     module))))
+	       (file-name-sans-extension
+		(file-name-nondirectory (substring module (1+ (string-match "#" module 1)))))
+	     (file-name-nondirectory module)))))
 
 (defun gdev:princ-unit-interface (unit)
   "[internal]"
