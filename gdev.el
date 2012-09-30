@@ -121,16 +121,17 @@
   (when gdev:debug
     (message "init-proc count"))
   (unless gdev:process
-    (setq gdev:process
-	  (start-process "gdev" nil "gosh"
-			 (concat "-I" (expand-file-name gdev:root-dir))
-			 (concat (file-name-as-directory (expand-file-name gdev:root-dir)) "gosh_complete.scm")
-			 (concat "--generated-doc-directory=" (file-name-as-directory gdev:root-dir) "doc")
-			 "--output-name-only"
-			 ;;TODO other encoding
-		         ;"--io-encoding="
-			 (gdev:get-load-module-text)
-			 ))
+    (let ((path (expand-file-name gdev:root-dir)))
+      (setq gdev:process
+	    (start-process "gdev" nil "gosh"
+			   (concat "-I" path)
+			   (concat (file-name-as-directory path) "gosh_complete.scm")
+			   (concat "--generated-doc-directory=" (file-name-as-directory path) "doc")
+			   "--output-name-only"
+			   ;;TODO other encoding
+			   ;"--io-encoding="
+			   (gdev:get-load-module-text)
+			   )))
     ;;ignore warning
     (set-process-query-on-exit-flag gdev:process nil)
     ;;set process filter
