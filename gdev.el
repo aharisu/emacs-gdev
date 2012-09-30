@@ -825,6 +825,31 @@
 	    t)
 	nil))))
 
+
+;;
+;;ginfo operation
+
+(defun gdev:close-ginfo ()
+  (interactive)
+  (let ((win (get-buffer-window "*ginfo*")))
+    (when win
+      (delete-window win))))
+
+(defun gdev:scroll-up-ginfo ()
+  (interactive)
+  (let ((win (get-buffer-window "*ginfo*")))
+    (when win
+      (with-selected-window win
+	(scroll-up 1)))))
+
+(defun gdev:scroll-down-ginfo ()
+  (interactive)
+  (let ((win (get-buffer-window "*ginfo*")))
+    (when win
+      (with-selected-window win
+	(scroll-down 1)))))
+
+
 ;;
 ;; Open info buffer
       
@@ -851,7 +876,6 @@
     (set-window-buffer win bufname)
     (when enter?
       (select-window win))))
-
 ;;
 ;; Jump to definition
 
