@@ -18,6 +18,12 @@ Vim用のvim-gdevをEmacsに移植したものなので、
 ### 依存する外部プログラム
 Gauche 0.9.2以上
 
+## インストール
+このライブラリはelispだけでなくGaucheのスクリプトも実行に必要です。  
+githubのリポジトリから全てのファイルをダウンロードして、Emacsでロード可能な場所に配置してください。  
+現状、auto-installなどのパッケージ管理プラグインに対応していないので、  
+githubのリポジトリをクローンするか、[downloads](https://github.com/aharisu/emacs-gdev/downloads)のページからZip/tar.gzをダウンロードして配置してください。
+
 ## 機能
 1. ソースコード内の大域定義とuseしているモジュールの解析を行い 補完候補としてリストアップ
 2. ginfoコマンドによってシンボルの情報を表示
