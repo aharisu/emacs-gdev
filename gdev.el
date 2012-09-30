@@ -113,8 +113,6 @@
 
 (defvar gdev:process nil)
 (defvar gdev:init-count 0)
-(setq gdev:process nil)
-(setq gdev:init-count 0)
 
 (defun gdev:proc-initialized? ()
   (processp gdev:process))
@@ -134,7 +132,7 @@
 			 (gdev:get-load-module-text)
 			 ))
     ;;ignore warning
-    (process-kill-without-query gdev:process nil)
+    (set-process-query-on-exit-flag gdev:process nil)
     ;;set process filter
     (set-process-filter gdev:process 'gdev:read-from-gauche-complete))
   ;;count up init-count
@@ -170,7 +168,7 @@
     (when (<= gdev:init-count 0)
       (gdev:write-text "#exit\n")
       (setq gdev:process nil)
-      (setq gdev:init-coount 0))))
+      (setq gdev:init-count 0))))
 
 (defun gdev:restart-proc ()
   "[internal]"
@@ -883,7 +881,7 @@
   (let ((units (gdev:match-unit-in-order-first-match-priority-exact-match (buffer-name) keyword nil))
 	(success? nil))
     (when (= 1 (length units))
-      (let ((line (string-to-int (assoc-default 'l (car units))))
+      (let ((line (string-to-number (assoc-default 'l (car units))))
 	    (filepath (assoc-default 'filepath (car units))))
 	(when (and (< 0 line) filepath (not (zerop (length filepath))))
 	  (cond
