@@ -100,8 +100,9 @@
   "[internal]"
   (when gdev:debug
     (message "gdev:after-save-hooks")
-    (message mode-name))
+;    (message mode-name))
   (when (and gdev:enable-gdev
+	     (stringp mode-name)
 	     (string= "Scheme" mode-name))
     (gdev:parse-cur-buf-from-file)))
 ;;register after-save-hook
