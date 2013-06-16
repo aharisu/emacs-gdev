@@ -104,7 +104,7 @@
   (when (and gdev:enable-gdev
 	     (stringp mode-name)
 	     (string= "Scheme" mode-name))
-    (gdev:parse-cur-buf-from-file)))
+    (gdev:parse-cur-buf-from-file))))
 ;;register after-save-hook
 (add-hook 'after-save-hook 'gdev:after-save-hooks)
 
